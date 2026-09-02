@@ -40,6 +40,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #elif defined( __linux__ ) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined( __sun )
 #include <GL/gl.h>
 #include <GL/glx.h>
+#elif defined(__phoenix__)
+// Phoenix-RTOS port: pull the GL types (GLint/GLuint/...) from the ported
+// Mesa headers, but NOT <GL/glx.h> — SDL owns the GL context, and Phoenix has
+// no X11/GLX. (The X11/GLX proc-pointer block near the end of this header is
+// likewise excluded for __phoenix__.)
+#include <GL/gl.h>
 #elif defined(__APPLE__)
 #include <OpenGL/gl.h>
 #endif
@@ -282,7 +288,14 @@ typedef char GLchar;
 	GLE( void, glXCopyContext, Display *dpy, GLXContext src, GLXContext dst, GLuint mask ) \
 	GLE( void, glXSwapBuffers, Display *dpy, GLXDrawable drawable )
 
-#ifndef __APPLE__
+// Phoenix-RTOS port: SDL supplies the GL context (SDL_GL_GetProcAddress /
+// SDL_GL_SetSwapInterval), so the platform-native swap-interval and X11/GLX
+// proc pointers below are never used, and QGL_LinX11_PROCS references
+// Display/GLXContext/XVisualInfo/Bool types that Phoenix's headers lack.
+// Exclude the block for Phoenix exactly as it is already excluded for Apple
+// (grep confirms no qglX*/QGL_Swp_PROCS references anywhere in the renderer,
+// sdl or client TUs).
+#if !defined(__APPLE__) && !defined(__phoenix__)
 
 #define GLE( ret, name, ... ) extern ret ( APIENTRY * q##name )( __VA_ARGS__ );
 	QGL_Swp_PROCS;
@@ -293,6 +306,6 @@ typedef char GLchar;
 #endif
 #undef GLE
 
-#endif // !__APPLE__
+#endif // !__APPLE__ && !__phoenix__
 
 #endif // __QGL_H__

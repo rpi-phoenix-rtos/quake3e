@@ -160,6 +160,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #endif // __linux___
 
+// ============================= Phoenix-RTOS ==============================
+
+#ifdef __phoenix__
+
+#define OS_STRING "phoenix"
+#define ID_INLINE inline
+
+// ARCH_STRING / Q3_LITTLE_ENDIAN / PATH_SEP / DLL_EXT (".so") all resolve in
+// the common-unix block above for __aarch64__; only the OS identity and the
+// inline keyword are missing, so the port adds just those two here.
+
+#endif // __phoenix__
+
 // =============================== BSD =====================================
 
 #if defined (__FreeBSD__) || defined (__NetBSD__) || defined (__OpenBSD__)

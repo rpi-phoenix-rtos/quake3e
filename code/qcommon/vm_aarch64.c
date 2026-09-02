@@ -2287,7 +2287,9 @@ __recompile:
 			return qfalse;
 		}
 #else
-		vm->codeBase.ptr = mmap( NULL, allocSize, PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0 );
+		/* Phoenix: the kernel honors PROT_EXEC at mmap time (vm/map.c) but mprotect cannot ADD
+		 * PROT_EXEC to an existing mapping, so allocate the code buffer RWX up front. */
+		vm->codeBase.ptr = mmap( NULL, allocSize, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED | MAP_ANONYMOUS, -1, 0 );
 		if ( vm->codeBase.ptr == MAP_FAILED ) {
 			VM_FreeBuffers();
 			Com_Printf( S_COLOR_WARNING "%s(%s): mmap failed\n", __func__, vm->name );
@@ -2339,9 +2341,10 @@ __recompile:
 	}
 #else
 	if ( mprotect( vm->codeBase.ptr, vm->codeLength, PROT_READ | PROT_EXEC ) ) {
-		VM_Destroy_Compiled( vm );
-		Com_Printf( S_COLOR_WARNING "%s(%s): mprotect failed\n", __func__, vm->name );
-		return qfalse;
+		/* Phoenix: mprotect can't add/keep PROT_EXEC on an existing mapping, but the buffer was
+		 * mmap'd RWX above (the kernel honors PROT_EXEC at map time), so it is already executable.
+		 * A failure here is non-fatal — it just leaves the pages writable too. */
+		Com_Printf( S_COLOR_WARNING "%s(%s): mprotect(RX) failed; running from the RWX mmap\n", __func__, vm->name );
 	}
 
 	// clear icache, http://blogs.arm.com/software-enablement/141-caches-and-self-modifying-code/

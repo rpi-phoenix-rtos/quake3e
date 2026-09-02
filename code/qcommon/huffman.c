@@ -281,10 +281,13 @@ static int Huff_Receive(node_t *node, int *ch, byte *fin) {
 	return (*ch = node->symbol);
 }
 
-/* Send the prefix code for this node */
-static void send(node_t *node, node_t *child, byte *fout) {
+/* Send the prefix code for this node.
+ * Phoenix-RTOS port: renamed from the file-local `send` to `Huff_send` so it
+ * no longer shadows POSIX send() (the Phoenix build force-includes the socket
+ * headers via the port's compat shim; the unqualified name collided). */
+static void Huff_send(node_t *node, node_t *child, byte *fout) {
 	if (node->parent) {
-		send(node->parent, node, fout);
+		Huff_send(node->parent, node, fout);
 	}
 	if (child) {
 		if (node->right == child) {
@@ -305,7 +308,7 @@ static void Huff_transmit( huff_t *huff, int ch, byte *fout ) {
 			add_bit((char)((ch >> i) & 0x1), fout);
 		}
 	} else {
-		send(huff->loc[ch], NULL, fout);
+		Huff_send(huff->loc[ch], NULL, fout);
 	}
 }
 
